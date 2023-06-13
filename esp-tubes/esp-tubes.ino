@@ -4,7 +4,13 @@
 
 WebSocketsClient webSocket;
 
-const uint16_t PixelCount = 38;
+// length of 6 foot pixels is 226 units (113 on each side)
+const uint16_t PixelCount = 226;
+
+// units to ignore at the beginning and end 
+// we ignore 4 pixels, meaning our actual length is 111 on each side
+const uint8_t offsetStart = 2;
+
 const uint8_t PixelPin = 2;
 
 NeoPixelBus<NeoGrbFeature, NeoWs2812xMethod> strip(PixelCount, PixelPin);
@@ -17,16 +23,15 @@ NeoPixelBus<NeoGrbFeature, NeoWs2812xMethod> strip(PixelCount, PixelPin);
 const char* ssid = STASSID;
 const char* password = STAPSK;
 
-const char* host = "djxmmx.net";
-const uint16_t port = 17;
-
 void printPayload(uint8_t* payload, size_t length) {
   Serial.println("Length...");
   Serial.println(length);
   for (size_t i = 0; i < length; i += 3) {
     Serial.print(payload[i], HEX);
     Serial.print(' ');
-    strip.SetPixelColor(i / 3, RgbColor(payload[i], payload[i + 1], payload[i + 2]));
+    int unitNumber = i / 3 + offsetStart;
+    strip.SetPixelColor(unitNumber, RgbColor(payload[i], payload[i + 1], payload[i + 2]));
+    strip.SetPixelColor(PixelCount - unitNumber - 1, RgbColor(payload[i], payload[i + 1], payload[i + 2]));
   }
   strip.Show();
   Serial.println();
@@ -49,7 +54,13 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
           strip.SetPixelColor(i, RgbColor(0, 50, 0));
         }
         strip.Show();
-        // connected = true;
+        delay(500);
+
+        // Turn all LED strips off
+        for (int i = 0; i < PixelCount; i++) {
+          strip.SetPixelColor(i, RgbColor(0, 0, 0));
+        }
+        strip.Show();
 
         // send message to server when Connected
         Serial.println("[WSc] SENT: Connected");
@@ -125,63 +136,11 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-
   Serial.println("Attempting websocket connect...");
   webSocket.begin("192.168.1.3", 8080);
   webSocket.onEvent(webSocketEvent);
 }
 
-
-
 void loop() {
-
   webSocket.loop();
-
-  // static bool wait = false;
-
-  // Serial.print("connecting to ");
-  // Serial.print(host);
-  // Serial.print(':');
-  // Serial.println(port);
-
-  // // Use WiFiClient class to create TCP connections
-  // WiFiClient client;
-  // if (!client.connect(host, port)) {
-  //   Serial.println("connection failed");
-  //   delay(5000);
-  //   return;
-  // }
-
-  // // This will send a string to the server
-  // Serial.println("sending data to server");
-  // if (client.connected()) { client.println("hello from ESP8266"); }
-
-  // // wait for data to be available
-  // unsigned long timeout = millis();
-  // while (client.available() == 0) {
-  //   if (millis() - timeout > 5000) {
-  //     Serial.println(">>> Client Timeout !");
-  //     client.stop();
-  //     delay(60000);
-  //     return;
-  //   }
-  // }
-
-  // // Read all the lines of the reply from server and print them to Serial
-  // Serial.println("receiving from remote server");
-  // // not testing 'client.connected()' since we do not need to send data here
-  // while (client.available()) {
-  //   char ch = static_cast<char>(client.read());
-  //   Serial.print(ch);
-  // }
-
-  // // Close the connection
-  // Serial.println();
-  // Serial.println("closing connection");
-  // client.stop();
-
-  // if (wait) {
-  //   delay(300000);  // execute once every 5 minutes, don't flood remote service
-  // }
-  // wait = true;
 }
