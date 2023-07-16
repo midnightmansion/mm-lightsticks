@@ -5,11 +5,14 @@
 WebSocketsClient webSocket;
 
 // length of 6 foot pixels is 226 units (113 on each side)
-const uint16_t PixelCount = 226;
+const uint16_t PixelCount = 222;
 
-// units to ignore at the beginning and end 
-// we ignore 4 pixels, meaning our actual length is 111 on each side
-const uint8_t offsetStart = 2;
+// units to ignore at the beginning and end
+// we ignore X pixels, meaning our actual length is 111 on each side
+const uint8_t offsetStart = 0;
+
+// we further ignore the address as the first character
+const uint8_t addressCharacters = 1;
 
 const uint8_t PixelPin = 2;
 
@@ -22,19 +25,20 @@ NeoPixelBus<NeoGrbFeature, NeoWs2812xMethod> strip(PixelCount, PixelPin);
 
 const char* ssid = STASSID;
 const char* password = STAPSK;
+IPAddress assignedIpAddress;
+String assignedIpAddressString;
 
 void printPayload(uint8_t* payload, size_t length) {
-  Serial.println("Length...");
-  Serial.println(length);
-  for (size_t i = 0; i < length; i += 3) {
-    Serial.print(payload[i], HEX);
-    Serial.print(' ');
-    int unitNumber = i / 3 + offsetStart;
-    strip.SetPixelColor(unitNumber, RgbColor(payload[i], payload[i + 1], payload[i + 2]));
-    strip.SetPixelColor(PixelCount - unitNumber - 1, RgbColor(payload[i], payload[i + 1], payload[i + 2]));
+
+  uint8_t firstCharacter = payload[0];
+  if (firstCharacter == assignedIpAddress[3]) {
+    for (size_t i = 0; i < 111 * 3; i += 3) {
+      int unitNumber = i / 3 + offsetStart;
+      strip.SetPixelColor(unitNumber, RgbColor(payload[i + 1 + addressCharacters], payload[i + 1 + addressCharacters], payload[i + 2 + addressCharacters]));
+      strip.SetPixelColor(PixelCount - unitNumber - 1, RgbColor(payload[i + addressCharacters], payload[i + 1 + addressCharacters], payload[i + 2 + addressCharacters]));
+    }
   }
   strip.Show();
-  Serial.println();
 }
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
@@ -64,7 +68,9 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
 
         // send message to server when Connected
         Serial.println("[WSc] SENT: Connected");
+        webSocket.sendTXT("Test");
         webSocket.sendTXT("Connected");
+        webSocket.sendTXT(assignedIpAddressString);
       }
       break;
     case WStype_TEXT:
@@ -98,7 +104,6 @@ void setup() {
 
   // We start by connecting to a WiFi network
 
-  Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -135,6 +140,8 @@ void setup() {
 
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+  assignedIpAddress = WiFi.localIP();
+  assignedIpAddressString = assignedIpAddress.toString();
 
   Serial.println("Attempting websocket connect...");
   webSocket.begin("192.168.1.3", 8080);

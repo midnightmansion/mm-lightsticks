@@ -6,6 +6,17 @@ const pixelCount = 111;
 
 const connections = {};
 
+const getHex = (value) => {
+  const hexValue = (Math.round(parseInt(value) / 2)).toString(16);
+  return hexValue.length === 1 ? `0${hexValue}` : hexValue;
+}
+
+// function to check if data is the format of an IP address
+const isIP = (data) => {
+  const ipRegex = /(\d{1,3}\.){3}\d{1,3}/;
+  return ipRegex.test(data);
+}
+
 wss.on('connection', function connection(ws) {
 
   // eventually we want to use something like IP address
@@ -17,15 +28,16 @@ wss.on('connection', function connection(ws) {
     ws
   }
 
-  console.log("total connections: ", Object.keys(connections).length);
-
   ws.on('close', function close() {
     delete connections[uuid];
     console.log('disconnected');
   });
 
   ws.on('message', function message(data) {
-    // console.log('received: %s', data);
+    if (isIP(data)) {
+      console.log('IP: %s', data);
+    }
+
     try {
       const videoData = JSON.parse(data);
       if (videoData.type === "source") {
@@ -36,14 +48,14 @@ wss.on('connection', function connection(ws) {
 
             // get first 111 elements of videoData
             // just the first row
-            const firstRow = videoData.data.slice(0, pixelCount).flat();
-            const hexValues = firstRow.map((value) => {
-              const hexValue = (Math.round(parseInt(value)/2)).toString(16);
-              return hexValue.length === 1 ? `0${hexValue}` : hexValue;
+            const firstColumn = videoData.data.filter((value, index) => {
+              return index % 8 === 0
+            }).flat();
+            const hexValues = firstColumn.map((value) => {
+              return getHex(value);
             });
-            const buffer = Buffer.from(hexValues.join(''), 'hex');
+            const buffer = Buffer.from(['02', ...hexValues].join(''), 'hex');
             connections[connection].ws.send(buffer);
-            console.log(buffer);
           }
         }
       }
