@@ -48,12 +48,16 @@ wss.on('connection', function connection(ws) {
 
             // get first 111 elements of videoData
             // just the first row
+            
+            // TODO: map ip address to column number
             const firstColumn = videoData.data.filter((value, index) => {
               return index % 8 === 0
             }).flat();
             const hexValues = firstColumn.map((value) => {
               return getHex(value);
             });
+            
+            // send IP address ending in 02 (x.x.x.2)
             const buffer = Buffer.from(['02', ...hexValues].join(''), 'hex');
             connections[connection].ws.send(buffer);
           }
