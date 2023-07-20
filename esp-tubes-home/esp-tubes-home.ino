@@ -144,7 +144,7 @@ void setup() {
   assignedIpAddressString = assignedIpAddress.toString();
 
   Serial.println("Attempting websocket connect...");
-  webSocket.begin("127.51.68.120", 8080);
+  webSocket.begin("192.168.86.24", 8080);
   webSocket.onEvent(webSocketEvent);
 }
 
