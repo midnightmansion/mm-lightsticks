@@ -19,8 +19,8 @@ const uint8_t PixelPin = 2;
 NeoPixelBus<NeoGrbFeature, NeoWs2812xMethod> strip(PixelCount, PixelPin);
 
 #ifndef STASSID
-#define STASSID "steve"
-#define STAPSK "quickgame?"
+#define STASSID "NETGEAR48"
+#define STAPSK "widerabbit310"
 #endif
 
 const char* ssid = STASSID;
@@ -34,7 +34,7 @@ void printPayload(uint8_t* payload, size_t length) {
   if (firstCharacter == assignedIpAddress[3]) {
     for (size_t i = 0; i < 111 * 3; i += 3) {
       int unitNumber = i / 3 + offsetStart;
-      strip.SetPixelColor(unitNumber, RgbColor(payload[i + 1 + addressCharacters], payload[i + 1 + addressCharacters], payload[i + 2 + addressCharacters]));
+      strip.SetPixelColor(unitNumber, RgbColor(payload[i + addressCharacters], payload[i + 1 + addressCharacters], payload[i + 2 + addressCharacters]));
       strip.SetPixelColor(PixelCount - unitNumber - 1, RgbColor(payload[i + addressCharacters], payload[i + 1 + addressCharacters], payload[i + 2 + addressCharacters]));
     }
   }
@@ -144,7 +144,7 @@ void setup() {
   assignedIpAddressString = assignedIpAddress.toString();
 
   Serial.println("Attempting websocket connect...");
-  webSocket.begin("127.51.68.120", 8080);
+  webSocket.begin("192.168.1.2", 8080);
   webSocket.onEvent(webSocketEvent);
 }
 

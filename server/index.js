@@ -7,14 +7,14 @@ const wss = new WebSocketServer({
 const connections = {};
 
 const ipToTubeNumberMapping = {
-  32: 0,
-  33: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-  6: 6,
-  7: 7,
+  5: 0,
+  6: 1,
+  7: 2,
+  8: 3,
+  9: 4,
+  10: 5,
+  12: 6,
+  4: 7
 }
 
 setInterval(() => {
@@ -23,6 +23,11 @@ setInterval(() => {
 
 const getHex = (value) => {
   const hexValue = (Math.round(parseInt(value) / 2)).toString(16);
+  return hexValue.length === 1 ? `0${hexValue}` : hexValue;
+}
+
+const getHexWithoutDoingWeirdThing = (value) => {
+  const hexValue = (Math.round(parseInt(value))).toString(16);
   return hexValue.length === 1 ? `0${hexValue}` : hexValue;
 }
 
@@ -88,11 +93,20 @@ wss.on('connection', function connection(ws) {
             }).flat();
             const hexValues = firstColumn.map((value) => {
               return getHex(value);
-            });
+            }).reverse();
+
+            // swap every 1st and 3rd value
+            // red needs to swap with blue for some reason
+            for (let i = 0; i < hexValues.length; i += 3) {
+              const temp = hexValues[i];
+              hexValues[i] = hexValues[i + 2];
+              hexValues[i + 2] = temp;
+            }
 
             // send IP address ending in 02 (x.x.x.2)
             // TODO zerofill
-            const buffer = Buffer.from([ipLastOctet.toString(), ...hexValues].join(''), 'hex');
+            const address = getHexWithoutDoingWeirdThing(ipLastOctet);
+            const buffer = Buffer.from([address, ...hexValues].join(''), 'hex');
             connections[connection].ws.send(buffer);
           }
         }
